@@ -67,18 +67,14 @@ type SockFprog struct {
 
 func main() {
 	var filter []SockFilter
-	//	filter = append(filter, ValidateArchitecture()...)
+	filter = append(filter, ValidateArchitecture()...)
 	filter = append(filter, KillProcess()...)
 
-	a := uint64(6)
 	prog := &SockFprog{
-		Len: uint16(len(filter)), // * int(unsafe.Sizeof(SockFilter{}))),
-		//		Filter: (*SockFilter)(unsafe.Pointer(&(filter)[0])),
-		Filter: (*SockFilter)(unsafe.Pointer(&a)),
+		Len:    uint16(len(filter)),
+		Filter: (*SockFilter)(unsafe.Pointer(&(filter)[0])),
 	}
-	log.Printf("prog.Len: %d\n", prog.Len)
-	//	t.Fatalf("prog: %v", prog)
-	//	t.Fatalf("filter: %v", filter)
+
 	pp := uint64(uintptr(unsafe.Pointer(prog)))
 	log.Printf("pp: 0x%x\n", pp)
 	if err := seccomp.Prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
