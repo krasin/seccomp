@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/krasin/seccomp"
 	"log"
+	"syscall"
 	"unsafe"
 )
 
@@ -13,6 +14,7 @@ const (
 
 	SECCOMP_MODE_FILTER = 2 /* uses user-supplied filter. */
 	SECCOMP_RET_KILL    = 0 /* kill the task immediately */
+	SECCOMP_RET_ALLOW   = 0x7fff0000
 
 	BPF_LD  = 0x00
 	BPF_JMP = 0x05
@@ -27,6 +29,8 @@ const (
 
 	AUDIT_ARCH_X86_64 = 8
 	ARCH_NR           = AUDIT_ARCH_X86_64
+
+	syscall_nr = 0
 )
 
 type SockFilter struct {
@@ -54,6 +58,19 @@ func ValidateArchitecture() []SockFilter {
 	}
 }
 
+func ExamineSyscall() []SockFilter {
+	return []SockFilter{
+		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, syscall_nr),
+	}
+}
+
+func AllowSyscall(syscallNum uint32) []SockFilter {
+	return []SockFilter{
+		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, syscallNum, 0, 1),
+		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_ALLOW),
+	}
+}
+
 func KillProcess() []SockFilter {
 	return []SockFilter{
 		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_KILL),
@@ -68,6 +85,13 @@ type SockFprog struct {
 func main() {
 	var filter []SockFilter
 	filter = append(filter, ValidateArchitecture()...)
+
+	// Grab the system call number.
+	filter = append(filter, ExamineSyscall()...)
+
+	// List allowed syscalls.
+	filter = append(filter, AllowSyscall(syscall.SYS_RT_SIGRETURN)...)
+
 	filter = append(filter, KillProcess()...)
 
 	prog := &SockFprog{
