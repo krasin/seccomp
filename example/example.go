@@ -2,11 +2,20 @@ package main
 
 import (
 	"fmt"
-	"github.com/krasin/seccomp"
 	"log"
+	"os"
 	"syscall"
+	"time"
 	"unsafe"
 )
+
+func Prctl(option int, arg2, arg3, arg4, arg5 uint64) (err error) {
+	_, _, e1 := syscall.Syscall6(syscall.SYS_PRCTL, uintptr(option), uintptr(arg2), uintptr(arg3), uintptr(arg4), uintptr(arg5), 0)
+	if e1 != 0 {
+		err = e1
+	}
+	return
+}
 
 const (
 	PR_GET_NAME         = 16
@@ -95,9 +104,8 @@ func main() {
 	filter = append(filter, AllowSyscall(syscall.SYS_EXIT)...)
 	filter = append(filter, AllowSyscall(syscall.SYS_READ)...)
 	filter = append(filter, AllowSyscall(syscall.SYS_WRITE)...)
-	//filter = append(filter, AllowSyscall(syscall.SYS_GETTIMEOFDAY)...)
-	//	filter = append(filter, AllowSyscall(syscall.SYS_MMAP)...)
-	//	filter = append(filter, AllowSyscall(syscall.SYS_CLOCK_NANOSLEEP)...)
+	filter = append(filter, AllowSyscall(syscall.SYS_GETTIMEOFDAY)...)
+	filter = append(filter, AllowSyscall(syscall.SYS_FUTEX)...)
 
 	filter = append(filter, KillProcess()...)
 
@@ -108,12 +116,26 @@ func main() {
 
 	fmt.Printf("len(filter): %d\n", len(filter))
 	fmt.Printf("filter: %v\n", filter)
-	if err := seccomp.Prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
+	if err := Prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
 		log.Fatalf("Prctl(PR_SET_NO_NEW_PRIVS): %v", err)
 	}
-	if err := seccomp.Prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER,
+	if err := Prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER,
 		uint64(uintptr(unsafe.Pointer(prog))), 1<<64-1, 0); err != nil {
 		log.Fatalf("prctl(SECCOMP): %v", err)
 	}
-	fmt.Printf("lala\n")
+
+	fmt.Printf("Time to sleep...\n")
+	time.Sleep(100 * time.Millisecond)
+	fmt.Printf("Wake up!\n")
+
+	fmt.Printf("And now, let's make a 'bad' syscall\n")
+	fmt.Printf("Note: due to lack of seccomp support from the Go runtime, the example will stuck instead of crashing. Use Ctrl+C to exit.\n")
+	_, _ = os.Open("nonexistent_file")
+
+	// Actually, the line below will never be printed.
+	// The quirk is that instead of crashing the whole process,
+	// the system kills just the thread that has violated the policy.
+	// Currently, it means that the Go runtime thread gets stuck and
+	// you will have to Ctrl+C to exit from this example.
+	fmt.Printf("How come, I'm alive?\n")
 }
