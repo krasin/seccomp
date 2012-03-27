@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/krasin/seccomp"
 	"log"
 	"syscall"
@@ -27,7 +28,7 @@ const (
 
 	BPF_K = 0x00
 
-	AUDIT_ARCH_X86_64 = 8
+	AUDIT_ARCH_X86_64 = 3221225534 // HACK: I don't understand this value
 	ARCH_NR           = AUDIT_ARCH_X86_64
 
 	syscall_nr = 0
@@ -52,7 +53,7 @@ func BPF_JUMP(code uint16, k uint32, jt uint8, jf uint8) SockFilter {
 
 func ValidateArchitecture() []SockFilter {
 	return []SockFilter{
-		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, 8), // HACK: 8 = sizeof(int) for the arch.
+		BPF_STMT(BPF_LD+BPF_W+BPF_ABS, 4), // HACK: I don't understand this 4.
 		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, ARCH_NR, 1, 0),
 		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_KILL),
 	}
@@ -91,6 +92,13 @@ func main() {
 
 	// List allowed syscalls.
 	filter = append(filter, AllowSyscall(syscall.SYS_RT_SIGRETURN)...)
+	filter = append(filter, AllowSyscall(syscall.SYS_EXIT_GROUP)...)
+	filter = append(filter, AllowSyscall(syscall.SYS_EXIT)...)
+	filter = append(filter, AllowSyscall(syscall.SYS_READ)...)
+	filter = append(filter, AllowSyscall(syscall.SYS_WRITE)...)
+	filter = append(filter, AllowSyscall(syscall.SYS_FSTAT)...)
+	filter = append(filter, AllowSyscall(syscall.SYS_MMAP)...)
+	filter = append(filter, AllowSyscall(syscall.SYS_CLOCK_NANOSLEEP)...)
 
 	filter = append(filter, KillProcess()...)
 
@@ -99,12 +107,14 @@ func main() {
 		Filter: (*SockFilter)(unsafe.Pointer(&(filter)[0])),
 	}
 
-	pp := uint64(uintptr(unsafe.Pointer(prog)))
-	log.Printf("pp: 0x%x\n", pp)
+	fmt.Printf("len(filter): %d\n", len(filter))
+	fmt.Printf("filter: %v\n", filter)
 	if err := seccomp.Prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
 		log.Fatalf("Prctl(PR_SET_NO_NEW_PRIVS): %v", err)
 	}
-	if err := seccomp.Prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, pp, 1<<64-1, 0); err != nil {
+	if err := seccomp.Prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER,
+		uint64(uintptr(unsafe.Pointer(prog))), 1<<64-1, 0); err != nil {
 		log.Fatalf("prctl(SECCOMP): %v", err)
 	}
+	fmt.Printf("lala\n")
 }
