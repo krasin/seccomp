@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"syscall"
 	"time"
 	"unsafe"
@@ -107,6 +108,8 @@ func main() {
 	filter = append(filter, AllowSyscall(syscall.SYS_WRITE)...)
 	filter = append(filter, AllowSyscall(syscall.SYS_GETTIMEOFDAY)...)
 	filter = append(filter, AllowSyscall(syscall.SYS_FUTEX)...)
+	filter = append(filter, AllowSyscall(syscall.SYS_SIGALTSTACK)...)
+	filter = append(filter, AllowSyscall(syscall.SYS_RT_SIGPROCMASK)...)
 
 	filter = append(filter, KillProcess()...)
 
@@ -116,16 +119,20 @@ func main() {
 		Filter: (*SockFilter)(unsafe.Pointer(&(filter)[0])),
 	}
 
+	runtime.LockOSThread()
 	if err := Prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
 		log.Fatalf("Prctl(PR_SET_NO_NEW_PRIVS): %v", err)
 	}
-	if err := Prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER,
-		uint64(uintptr(unsafe.Pointer(prog))), 1<<64-1, 0); err != nil {
-		log.Fatalf("prctl(SECCOMP): %v", err)
+	if true {
+		if err := Prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER,
+			uint64(uintptr(unsafe.Pointer(prog))), 1<<64-1, 0); err != nil {
+			log.Fatalf("prctl(SECCOMP): %v", err)
+		}
 	}
+	runtime.UnlockOSThread()
 
 	fmt.Printf("Time to sleep...\n")
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(time.Second)
 	fmt.Printf("Wake up!\n")
 
 	fmt.Printf("And now, let's make a 'bad' syscall\n")
