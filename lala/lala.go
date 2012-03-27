@@ -91,14 +91,13 @@ func main() {
 	filter = append(filter, ExamineSyscall()...)
 
 	// List allowed syscalls.
-	filter = append(filter, AllowSyscall(syscall.SYS_RT_SIGRETURN)...)
 	filter = append(filter, AllowSyscall(syscall.SYS_EXIT_GROUP)...)
 	filter = append(filter, AllowSyscall(syscall.SYS_EXIT)...)
 	filter = append(filter, AllowSyscall(syscall.SYS_READ)...)
 	filter = append(filter, AllowSyscall(syscall.SYS_WRITE)...)
-	filter = append(filter, AllowSyscall(syscall.SYS_FSTAT)...)
-	filter = append(filter, AllowSyscall(syscall.SYS_MMAP)...)
-	filter = append(filter, AllowSyscall(syscall.SYS_CLOCK_NANOSLEEP)...)
+	//filter = append(filter, AllowSyscall(syscall.SYS_GETTIMEOFDAY)...)
+	//	filter = append(filter, AllowSyscall(syscall.SYS_MMAP)...)
+	//	filter = append(filter, AllowSyscall(syscall.SYS_CLOCK_NANOSLEEP)...)
 
 	filter = append(filter, KillProcess()...)
 
