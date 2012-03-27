@@ -102,6 +102,7 @@ func main() {
 	// List allowed syscalls.
 	filter = append(filter, AllowSyscall(syscall.SYS_EXIT_GROUP)...)
 	filter = append(filter, AllowSyscall(syscall.SYS_EXIT)...)
+	filter = append(filter, AllowSyscall(syscall.SYS_MMAP)...)
 	filter = append(filter, AllowSyscall(syscall.SYS_READ)...)
 	filter = append(filter, AllowSyscall(syscall.SYS_WRITE)...)
 	filter = append(filter, AllowSyscall(syscall.SYS_GETTIMEOFDAY)...)
@@ -109,13 +110,12 @@ func main() {
 
 	filter = append(filter, KillProcess()...)
 
+	fmt.Printf("Applying syscall policy...\n")
 	prog := &SockFprog{
 		Len:    uint16(len(filter)),
 		Filter: (*SockFilter)(unsafe.Pointer(&(filter)[0])),
 	}
 
-	fmt.Printf("len(filter): %d\n", len(filter))
-	fmt.Printf("filter: %v\n", filter)
 	if err := Prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
 		log.Fatalf("Prctl(PR_SET_NO_NEW_PRIVS): %v", err)
 	}
