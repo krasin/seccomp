@@ -18,7 +18,6 @@ import (
 	"os"
 	"runtime"
 	"syscall"
-	"time"
 	"unsafe"
 )
 
@@ -133,19 +132,15 @@ func main() {
 	}
 
 	runtime.LockOSThread()
+
 	if err := Prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
 		log.Fatalf("Prctl(PR_SET_NO_NEW_PRIVS): %v", err)
 	}
-	if true {
-		if err := Prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER,
-			uint64(uintptr(unsafe.Pointer(prog))), 1<<64-1, 0); err != nil {
-			log.Fatalf("prctl(SECCOMP): %v", err)
-		}
-	}
 
-	fmt.Printf("Time to sleep...\n")
-	time.Sleep(time.Second)
-	fmt.Printf("Wake up!\n")
+	if err := Prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER,
+		uint64(uintptr(unsafe.Pointer(prog))), 1<<64-1, 0); err != nil {
+		log.Fatalf("prctl(SECCOMP): %v", err)
+	}
 
 	fmt.Printf("And now, let's make a 'bad' syscall\n")
 	fmt.Printf("Note: due to lack of seccomp support from the Go runtime," +
