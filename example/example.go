@@ -125,12 +125,12 @@ func main() {
 
 	filter = append(filter, KillProcess()...)
 
-	fmt.Printf("Applying syscall policy...\n")
 	prog := &SockFprog{
 		Len:    uint16(len(filter)),
 		Filter: (*SockFilter)(unsafe.Pointer(&(filter)[0])),
 	}
 
+	fmt.Printf("Applying syscall policy...\n")
 	runtime.LockOSThread()
 
 	if err := Prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
