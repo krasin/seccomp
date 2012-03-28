@@ -11,7 +11,8 @@ import (
 )
 
 func Prctl(option int, arg2, arg3, arg4, arg5 uint64) (err error) {
-	_, _, e1 := syscall.Syscall6(syscall.SYS_PRCTL, uintptr(option), uintptr(arg2), uintptr(arg3), uintptr(arg4), uintptr(arg5), 0)
+	_, _, e1 := syscall.Syscall6(syscall.SYS_PRCTL, uintptr(option),
+		uintptr(arg2), uintptr(arg3), uintptr(arg4), uintptr(arg5), 0)
 	if e1 != 0 {
 		err = e1
 	}
@@ -136,7 +137,8 @@ func main() {
 	fmt.Printf("Wake up!\n")
 
 	fmt.Printf("And now, let's make a 'bad' syscall\n")
-	fmt.Printf("Note: due to lack of seccomp support from the Go runtime, the example will stuck instead of crashing. Use Ctrl+C to exit.\n")
+	fmt.Printf("Note: due to lack of seccomp support from the Go runtime," +
+		"the example will stuck instead of crashing. Use Ctrl+C to exit.\n")
 	_, _ = os.Open("nonexistent_file")
 
 	// Actually, the line below will never be printed.
