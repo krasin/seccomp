@@ -142,7 +142,6 @@ func main() {
 			log.Fatalf("prctl(SECCOMP): %v", err)
 		}
 	}
-	runtime.UnlockOSThread()
 
 	fmt.Printf("Time to sleep...\n")
 	time.Sleep(time.Second)
