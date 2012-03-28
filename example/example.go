@@ -1,5 +1,17 @@
 package main
 
+// This is an example of using 'mode 2 seccomp' based on
+// the following tutorial: http://outflux.net/teach-seccomp/
+//
+// 'mode 2 seccomp' is the security mechanism that allows to restrict
+// the list of syscalls allowed to be called from the current thread.
+// In case of the policy violation, the thread is killed.
+//
+// As of now, 'mode 2 seccomp is supported in Ubuntu 12.04 and
+// may become available in the mainline kernel 'soon'.
+// You may follow the progress on lkml.org, for instance,
+// https://lkml.org/lkml/2012/3/14/573
+
 import (
 	"fmt"
 	"log"
